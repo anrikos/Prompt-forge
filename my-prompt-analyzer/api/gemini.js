@@ -1,16 +1,16 @@
 export const config = {
-  runtime: 'edge', // Переключаем на Edge Runtime, чтобы обойти лимит в 10 секунд
+  runtime: 'edge', // Переключаем Vercel на Edge Runtime, чтобы обойти лимит в 10 секунд
 };
 
 export default async function handler(req) {
-  // На Edge runtime заголовки CORS настраиваются через объект Response
+  // Настройка заголовков CORS через веб-стандарты Edge
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
   };
 
-  // Обработка Preflight-запроса
+  // Обработка Preflight-запроса браузера (OPTIONS)
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
@@ -23,29 +23,29 @@ export default async function handler(req) {
   }
 
   try {
-    // На Edge runtime переменные берутся стандартно через process.env
+    // В Edge Runtime заголовки извлекаются через метод .get()
     const apiKey = process.env.GEMINI_API_KEY || req.headers.get('x-api-key');
 
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API ключ не найден.' }), {
+      return new Response(JSON.stringify({ error: 'API ключ не найден. Введите его в интерфейсе или настройте переменные окружения.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Читаем тело запроса
+    // Безопасно считываем входящий JSON-поток
     const body = await req.json().catch(() => ({}));
     const { contents } = body;
 
     if (!contents) {
-      return new Response(JSON.stringify({ error: 'Отсутствует поле contents.' }), {
+      return new Response(JSON.stringify({ error: 'Отсутствует обязательное поле "contents".' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const model = 'gemini-3.8-flash';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url = `https://googleapis.com{model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
