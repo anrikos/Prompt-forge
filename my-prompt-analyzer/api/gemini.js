@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
     const { contents } = req.body;
     const model = 'gemini-2.5-flash';
-    const url = `https://googleapis.com{model}:generateContent?key=${apiKey}`;
+const url = `https://googleapis.com{model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
