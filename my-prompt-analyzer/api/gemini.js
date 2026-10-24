@@ -1,16 +1,14 @@
 export const config = {
-  runtime: 'edge', // Переключаем Vercel на Edge Runtime, чтобы обойти лимит в 10 секунд
+  runtime: 'edge', // Оставляем Edge для обхода 10-секундного таймаута
 };
 
 export default async function handler(req) {
-  // Настройка заголовков CORS через веб-стандарты Edge
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
   };
 
-  // Обработка Preflight-запроса браузера (OPTIONS)
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
@@ -23,17 +21,17 @@ export default async function handler(req) {
   }
 
   try {
-    // В Edge Runtime заголовки извлекаются через метод .get()
-    const apiKey = process.env.GEMINI_API_KEY || req.headers.get('x-api-key');
+    // Извлекаем ключ и ОБЯЗАТЕЛЬНО очищаем его от пробелов и переносов строк с помощью .trim()
+    let rawApiKey = process.env.GEMINI_API_KEY || req.headers.get('x-api-key') || '';
+    const apiKey = rawApiKey.trim();
 
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API ключ не найден. Введите его в интерфейсе или настройте переменные окружения.' }), {
+      return new Response(JSON.stringify({ error: 'API ключ не найден или пустой.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Безопасно считываем входящий JSON-поток
     const body = await req.json().catch(() => ({}));
     const { contents } = body;
 
@@ -45,9 +43,12 @@ export default async function handler(req) {
     }
 
     const model = 'gemini-3.8-flash';
-    const url = `https://googleapis.com{model}:generateContent?key=${apiKey}`;
+    
+    // Формируем базовый URL и параметры через безопасный конструктор URLSearchParams
+    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const finalUrl = `${baseUrl}?key=${encodeURIComponent(apiKey)}`;
 
-    const response = await fetch(url, {
+    const response = await fetch(finalUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents }),
@@ -67,4 +68,6 @@ export default async function handler(req) {
     });
   }
 }
+
+
 
