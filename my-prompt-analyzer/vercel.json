@@ -6,10 +6,5 @@
       "source": "/api/gemini",
       "destination": "/api/gemini.js"
     }
-  ],
-  "functions": {
-    "api/gemini.js": {
-      "runtime": "edge"
-    }
-  }
+  ]
 }
