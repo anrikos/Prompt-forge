@@ -24,7 +24,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'API ключ не найден. Введите его в интерфейсе или настройте переменные окружения.' });
     }
 
-    const { contents } = req.body;
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+const { contents } = body || {};
     const model = 'gemini-2.5-flash';
 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
