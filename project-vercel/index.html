@@ -549,7 +549,7 @@
 
                         // Запрос идет СРАЗУ на сервера Google, минуя любые ограничения Vercel в 10 секунд!
                         const model = 'gemini-3.8-flash';
-                        const url = `https://googleapis.com{model}:generateContent?key=${apiKey.trim()}`;
+                       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
 
                         try {
                             const response = await fetch(url, {
