@@ -1,33 +1,51 @@
-// api/gemini.js
+export const config = {
+  runtime: 'edge', // Переключаем на Edge Runtime, чтобы обойти лимит в 10 секунд
+};
 
-export default async function handler(req, res) {
-  // Разрешаем CORS, чтобы фронтенд мог общаться с этой функцией
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+export default async function handler(req) {
+  // На Edge runtime заголовки CORS настраиваются через объект Response
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+  };
 
-  // Обработка предварительного запроса браузера (Preflight)
+  // Обработка Preflight-запроса
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Разрешены только POST-запросы' });
+    return new Response(JSON.stringify({ error: 'Разрешены только POST-запросы' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
-    // 1. Пытаемся взять ключ из переменных окружения сервера (если владелец проекта добавил свой)
-    // 2. Если его нет, берем ключ, который пользователь ввел вручную в интерфейсе (из заголовков)
-    const apiKey = process.env.GEMINI_API_KEY || req.headers['x-api-key'];
+    // На Edge runtime переменные берутся стандартно через process.env
+    const apiKey = process.env.GEMINI_API_KEY || req.headers.get('x-api-key');
 
     if (!apiKey) {
-      return res.status(400).json({ error: 'API ключ не найден. Введите его в интерфейсе или настройте переменные окружения.' });
+      return new Response(JSON.stringify({ error: 'API ключ не найден.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-const { contents } = body || {};
+    // Читаем тело запроса
+    const body = await req.json().catch(() => ({}));
+    const { contents } = body;
+
+    if (!contents) {
+      return new Response(JSON.stringify({ error: 'Отсутствует поле contents.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const model = 'gemini-3.8-flash';
-const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -36,9 +54,17 @@ const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:ge
     });
 
     const data = await response.json();
-    return res.status(response.status).json(data);
+    
+    return new Response(JSON.stringify(data), {
+      status: response.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
-    return res.status(500).json({ error: `Ошибка сервера: ${error.message}` });
+    return new Response(JSON.stringify({ error: `Ошибка Edge-сервера: ${error.message}` }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 }
+
