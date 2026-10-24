@@ -1,5 +1,5 @@
 export const config = {
-  runtime: 'edge', // Оставляем Edge для обхода 10-секундного таймаута
+  runtime: 'edge',
 };
 
 export default async function handler(req) {
@@ -9,6 +9,7 @@ export default async function handler(req) {
     'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
   };
 
+  // Обработка Preflight запроса браузера
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
@@ -21,12 +22,12 @@ export default async function handler(req) {
   }
 
   try {
-    // Извлекаем ключ и ОБЯЗАТЕЛЬНО очищаем его от пробелов и переносов строк с помощью .trim()
+    // Извлекаем ключ (из переменных окружения Vercel или из заголовков фронтенда)
     let rawApiKey = process.env.GEMINI_API_KEY || req.headers.get('x-api-key') || '';
     const apiKey = rawApiKey.trim();
 
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API ключ не найден или пустой.' }), {
+      return new Response(JSON.stringify({ error: 'API ключ не найден. Введите его в интерфейсе или настройте переменные окружения.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -43,8 +44,6 @@ export default async function handler(req) {
     }
 
     const model = 'gemini-3.8-flash';
-    
-    // Формируем базовый URL и параметры через безопасный конструктор URLSearchParams
     const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const finalUrl = `${baseUrl}?key=${encodeURIComponent(apiKey)}`;
 
@@ -68,6 +67,7 @@ export default async function handler(req) {
     });
   }
 }
+
 
 
 
