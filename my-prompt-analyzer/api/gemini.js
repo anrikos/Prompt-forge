@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 const { contents } = body || {};
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.8-flash';
 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
